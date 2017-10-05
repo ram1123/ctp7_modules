@@ -22,7 +22,12 @@ struct localArgs {
     RPCMsg *response;
 };
 
-
+/**
+* @brief Splits string into an array of strings, based on delim
+* @param std::string input string
+* @param delim delimiter used to split the string
+* @param Out is the result
+**/
 template<typename Out>
 void split(const std::string &s, char delim, Out result) {
     std::stringstream ss;
