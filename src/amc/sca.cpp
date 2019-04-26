@@ -120,7 +120,7 @@ std::vector<uint32_t> scaGPIOCommandLocal(localArgs* la, SCAGPIOCommandT const& 
   return reply;
 }
 
-std::vector<uint32_t> scaADCCommand(localArgs* la, SCAADCChannelT const& ch, SCAADCCommandT const& cmd, uint8_t const& len, uint32_t data, uint16_t const& ohMask)
+std::vector<uint32_t> scaADCCommand(localArgs* la, SCAADCChannelT const& ch, uint8_t const& len, uint32_t data, uint16_t const& ohMask)
 {
   uint32_t monMask = readReg(la,"GEM_AMC.SLOW_CONTROL.SCA.ADC_MONITORING.MONITORING_OFF");
   writeReg(la,"GEM_AMC.SLOW_CONTROL.SCA.ADC_MONITORING.MONITORING_OFF",       0xffffffff);
@@ -129,8 +129,10 @@ std::vector<uint32_t> scaADCCommand(localArgs* la, SCAADCChannelT const& ch, SCA
   // select the ADC channel
   sendSCACommand(la, SCAChannel::ADC, SCAADCCommand::ADC_W_MUX, 0x4, ch, ohMask);
 
-  // enable/disable the current sink
-  sendSCACommand(la, SCAChannel::ADC, SCAADCCommand::ADC_W_CURR, 0x4, 0x1<<ch, ohMask);
+
+  // enable/disable the current sink if reading the temperature ADCs
+  if (ch == 0x00 || ch == 0x04 || ch == 0x07 || ch == 0x08 || ch == 0x1f)	// Hardcoded the channel numbers
+    sendSCACommand(la, SCAChannel::ADC, SCAADCCommand::ADC_W_CURR, 0x4, 0x1<<ch, ohMask);
   // start the conversion and get the result
   std::vector<uint32_t> result = sendSCACommandWithReply(la, SCAChannel::ADC, SCAADCCommand::ADC_GO, 0x4, 0x1, ohMask);
 
@@ -235,3 +237,286 @@ void resetSCASEUCounter(const RPCMsg *request, RPCMsg *response)
 
   rtxn.abort();
 }
+
+void readADCCommands(const RPCMsg *request, RPCMsg *response)
+{
+  // struct localArgs la = getLocalArgs(response);
+  GETLOCALARGS(response);
+
+  uint32_t ohMask = request->get_word("ohMask");
+  LOGGER->log_message(LogManager::INFO, stdsprintf("Optohybrids to read: %x",ohMask));
+
+  SCAADCChannelT  ch = static_cast<SCAADCChannelT>(request->get_word("ch"));
+  LOGGER->log_message(LogManager::INFO, stdsprintf("ADC Channel to read: %x",ch));
+  /////
+  std::vector<uint32_t> result;
+  result = scaADCCommand(&la, ch, 0, 0, ohMask);
+  for(unsigned int i=0; i<result.size(); i++)
+    { 
+      if (result[i] != 0)
+      LOGGER->log_message(LogManager::INFO, stdsprintf("Value for OH%i = %i ",i,result[i])); }
+
+  rtxn.abort();
+}
+
+void readADCTemperatureChannel(const RPCMsg *request, RPCMsg *response)
+{
+  // struct localArgs la = getLocalArgs(response);
+  GETLOCALARGS(response);
+
+  uint32_t ohMask = request->get_word("ohMask");
+  LOGGER->log_message(LogManager::INFO, stdsprintf("Optohybrids to read: %x",ohMask));
+
+  //LOGGER->log_message(LogManager::INFO, stdsprintf("Temperature ADC Channel to read: 0x00"));
+  std::vector<uint32_t> result;
+  result = scaADCCommand(&la, static_cast<SCAADCChannelT>(0x00), 0, 0, ohMask);
+  for(unsigned int i=0; i<result.size(); i++)
+    { 
+      if (result[i] != 0)
+      LOGGER->log_message(LogManager::INFO, stdsprintf("Temperature for OH%i, SCA-ADC channel 0x00 = %i ",i,result[i])); 
+    }
+
+  //LOGGER->log_message(LogManager::INFO, stdsprintf("Temperature ADC Channel to read: 0x04"));
+  result = scaADCCommand(&la, static_cast<SCAADCChannelT>(0x04), 0, 0, ohMask);
+  for(unsigned int i=0; i<result.size(); i++)
+    { 
+      if (result[i] != 0)
+      LOGGER->log_message(LogManager::INFO, stdsprintf("Temperature for OH%i, SCA-ADC channel 0x04 = %i ",i,result[i])); 
+    }
+
+  //LOGGER->log_message(LogManager::INFO, stdsprintf("Temperature ADC Channel to read: 0x07"));
+  result = scaADCCommand(&la, static_cast<SCAADCChannelT>(0x07), 0, 0, ohMask);
+  for(unsigned int i=0; i<result.size(); i++)
+    { 
+      if (result[i] != 0)
+      LOGGER->log_message(LogManager::INFO, stdsprintf("Temperature for OH%i, SCA-ADC channel 0x07 = %i ",i,result[i])); 
+    }
+
+  //LOGGER->log_message(LogManager::INFO, stdsprintf("Temperature ADC Channel to read: 0x08"));
+  result = scaADCCommand(&la, static_cast<SCAADCChannelT>(0x08), 0, 0, ohMask);
+  for(unsigned int i=0; i<result.size(); i++)
+    { 
+      if (result[i] != 0)
+      LOGGER->log_message(LogManager::INFO, stdsprintf("Temperature for OH%i, SCA-ADC channel 0x08 = %i ",i,result[i])); 
+    }
+
+  result = scaADCCommand(&la, static_cast<SCAADCChannelT>(0x1f), 0, 0, ohMask);
+  for(unsigned int i=0; i<result.size(); i++)
+    { 
+      if (result[i] != 0)
+      LOGGER->log_message(LogManager::INFO, stdsprintf("Internal SCA temperature for OH%i, SCA-ADC channel 0x1f = %i ",i,result[i])); 
+    }
+
+  rtxn.abort();
+}
+
+void readADCVoltageChannel(const RPCMsg *request, RPCMsg *response)
+{
+  // struct localArgs la = getLocalArgs(response);
+  GETLOCALARGS(response);
+
+  uint32_t ohMask = request->get_word("ohMask");
+  LOGGER->log_message(LogManager::INFO, stdsprintf("Optohybrids to read: %x",ohMask));
+
+  //LOGGER->log_message(LogManager::INFO, stdsprintf("Voltage ADC Channel to read: 0x00"));
+  std::vector<uint32_t> result;
+  result = scaADCCommand(&la, static_cast<SCAADCChannelT>(0x1b), 0, 0, ohMask);
+  for(unsigned int i=0; i<result.size(); i++)
+    { 
+      if (result[i] != 0)
+      LOGGER->log_message(LogManager::INFO, stdsprintf("FPGA MGT Voltage for OH%i, SCA-ADC channel 0x1b = %i ",i,result[i])); 
+    }
+
+  //LOGGER->log_message(LogManager::INFO, stdsprintf("Voltage ADC Channel to read: 0x04"));
+  result = scaADCCommand(&la, static_cast<SCAADCChannelT>(0x1e), 0, 0, ohMask);
+  for(unsigned int i=0; i<result.size(); i++)
+    { 
+      if (result[i] != 0)
+      LOGGER->log_message(LogManager::INFO, stdsprintf("FPGA MGT Voltage for OH%i, SCA-ADC channel 0x1e = %i ",i,result[i])); 
+    }
+
+  //LOGGER->log_message(LogManager::INFO, stdsprintf("Voltage ADC Channel to read: 0x07"));
+  result = scaADCCommand(&la, static_cast<SCAADCChannelT>(0x11), 0, 0, ohMask);
+  for(unsigned int i=0; i<result.size(); i++)
+    { 
+      if (result[i] != 0)
+      LOGGER->log_message(LogManager::INFO, stdsprintf("FPGA core voltage for OH%i, SCA-ADC channel 0x11 = %i ",i,result[i])); 
+    }
+
+  //LOGGER->log_message(LogManager::INFO, stdsprintf("Voltage ADC Channel to read: 0x08"));
+  result = scaADCCommand(&la, static_cast<SCAADCChannelT>(0x0e), 0, 0, ohMask);
+  for(unsigned int i=0; i<result.size(); i++)
+    { 
+      if (result[i] != 0)
+      LOGGER->log_message(LogManager::INFO, stdsprintf("PROM power voltage for OH%i, SCA-ADC channel 0x0e = %i ",i,result[i])); 
+    }
+
+  result = scaADCCommand(&la, static_cast<SCAADCChannelT>(0x18), 0, 0, ohMask);
+  for(unsigned int i=0; i<result.size(); i++)
+    { 
+      if (result[i] != 0)
+      LOGGER->log_message(LogManager::INFO, stdsprintf("power for GBTX and SCA for OH%i, SCA-ADC channel 0x18 = %i ",i,result[i])); 
+    }
+
+  result = scaADCCommand(&la, static_cast<SCAADCChannelT>(0x0f), 0, 0, ohMask);
+  for(unsigned int i=0; i<result.size(); i++)
+    { 
+      if (result[i] != 0)
+      LOGGER->log_message(LogManager::INFO, stdsprintf("FPGA I/O power for OH%i, SCA-ADC channel 0x0f = %i ",i,result[i])); 
+    }
+
+  rtxn.abort();
+}
+
+void readADCSignalStrengthChannel(const RPCMsg *request, RPCMsg *response)
+{
+  // struct localArgs la = getLocalArgs(response);
+  GETLOCALARGS(response);
+
+  uint32_t ohMask = request->get_word("ohMask");
+  LOGGER->log_message(LogManager::INFO, stdsprintf("Optohybrids to read: %x",ohMask));
+
+  std::vector<uint32_t> result;
+  result = scaADCCommand(&la, static_cast<SCAADCChannelT>(0x15), 0, 0, ohMask);
+  for(unsigned int i=0; i<result.size(); i++)
+    { 
+      if (result[i] != 0)
+      LOGGER->log_message(LogManager::INFO, stdsprintf("Signal strength of VTRX1 OH%i, SCA-ADC channel 0x15 = %i ",i,result[i])); 
+    }
+
+  //LOGGER->log_message(LogManager::INFO, stdsprintf("Temperature ADC Channel to read: 0x04"));
+  result = scaADCCommand(&la, static_cast<SCAADCChannelT>(0x13), 0, 0, ohMask);
+  for(unsigned int i=0; i<result.size(); i++)
+    { 
+      if (result[i] != 0)
+      LOGGER->log_message(LogManager::INFO, stdsprintf("Signal strength of VTRX2 OH%i, SCA-ADC channel 0x13 = %i ",i,result[i])); 
+    }
+
+  result = scaADCCommand(&la, static_cast<SCAADCChannelT>(0x12), 0, 0, ohMask);
+  for(unsigned int i=0; i<result.size(); i++)
+    { 
+      if (result[i] != 0)
+      LOGGER->log_message(LogManager::INFO, stdsprintf("Signal strength of VTRX3 OH%i, SCA-ADC channel 0x12 = %i ",i,result[i])); 
+    }
+
+  rtxn.abort();
+}
+
+void readAllADCChannel(const RPCMsg *request, RPCMsg *response)
+{
+  // struct localArgs la = getLocalArgs(response);
+  GETLOCALARGS(response);
+
+  uint32_t ohMask = request->get_word("ohMask");
+  LOGGER->log_message(LogManager::INFO, stdsprintf("Optohybrids to read: %x",ohMask));
+
+  //LOGGER->log_message(LogManager::INFO, stdsprintf("Temperature ADC Channel to read: 0x00"));
+  std::vector<uint32_t> result;
+  result = scaADCCommand(&la, static_cast<SCAADCChannelT>(0x00), 0, 0, ohMask);
+  for(unsigned int i=0; i<result.size(); i++)
+    { 
+      if (result[i] != 0)
+      LOGGER->log_message(LogManager::INFO, stdsprintf("Temperature for OH%i, SCA-ADC channel 0x00 = %i ",i,result[i])); 
+    }
+
+  //LOGGER->log_message(LogManager::INFO, stdsprintf("Temperature ADC Channel to read: 0x04"));
+  result = scaADCCommand(&la, static_cast<SCAADCChannelT>(0x04), 0, 0, ohMask);
+  for(unsigned int i=0; i<result.size(); i++)
+    { 
+      if (result[i] != 0)
+      LOGGER->log_message(LogManager::INFO, stdsprintf("Temperature for OH%i, SCA-ADC channel 0x04 = %i ",i,result[i])); 
+    }
+
+  //LOGGER->log_message(LogManager::INFO, stdsprintf("Temperature ADC Channel to read: 0x07"));
+  result = scaADCCommand(&la, static_cast<SCAADCChannelT>(0x07), 0, 0, ohMask);
+  for(unsigned int i=0; i<result.size(); i++)
+    { 
+      if (result[i] != 0)
+      LOGGER->log_message(LogManager::INFO, stdsprintf("Temperature for OH%i, SCA-ADC channel 0x07 = %i ",i,result[i])); 
+    }
+
+  //LOGGER->log_message(LogManager::INFO, stdsprintf("Temperature ADC Channel to read: 0x08"));
+  result = scaADCCommand(&la, static_cast<SCAADCChannelT>(0x08), 0, 0, ohMask);
+  for(unsigned int i=0; i<result.size(); i++)
+    { 
+      if (result[i] != 0)
+      LOGGER->log_message(LogManager::INFO, stdsprintf("Temperature for OH%i, SCA-ADC channel 0x08 = %i ",i,result[i])); 
+    }
+
+  result = scaADCCommand(&la, static_cast<SCAADCChannelT>(0x1f), 0, 0, ohMask);
+  for(unsigned int i=0; i<result.size(); i++)
+    { 
+      if (result[i] != 0)
+      LOGGER->log_message(LogManager::INFO, stdsprintf("Internal SCA temperature for OH%i, SCA-ADC channel 0x1f = %i ",i,result[i])); 
+    }
+
+  result = scaADCCommand(&la, static_cast<SCAADCChannelT>(0x1b), 0, 0, ohMask);
+  for(unsigned int i=0; i<result.size(); i++)
+    { 
+      if (result[i] != 0)
+      LOGGER->log_message(LogManager::INFO, stdsprintf("FPGA MGT Voltage for OH%i, SCA-ADC channel 0x1b = %i ",i,result[i])); 
+    }
+
+  //LOGGER->log_message(LogManager::INFO, stdsprintf("Voltage ADC Channel to read: 0x04"));
+  result = scaADCCommand(&la, static_cast<SCAADCChannelT>(0x1e), 0, 0, ohMask);
+  for(unsigned int i=0; i<result.size(); i++)
+    { 
+      if (result[i] != 0)
+      LOGGER->log_message(LogManager::INFO, stdsprintf("FPGA MGT Voltage for OH%i, SCA-ADC channel 0x1e = %i ",i,result[i])); 
+    }
+
+  //LOGGER->log_message(LogManager::INFO, stdsprintf("Voltage ADC Channel to read: 0x07"));
+  result = scaADCCommand(&la, static_cast<SCAADCChannelT>(0x11), 0, 0, ohMask);
+  for(unsigned int i=0; i<result.size(); i++)
+    { 
+      if (result[i] != 0)
+      LOGGER->log_message(LogManager::INFO, stdsprintf("FPGA core voltage for OH%i, SCA-ADC channel 0x11 = %i ",i,result[i])); 
+    }
+
+  //LOGGER->log_message(LogManager::INFO, stdsprintf("Voltage ADC Channel to read: 0x08"));
+  result = scaADCCommand(&la, static_cast<SCAADCChannelT>(0x0e), 0, 0, ohMask);
+  for(unsigned int i=0; i<result.size(); i++)
+    { 
+      if (result[i] != 0)
+      LOGGER->log_message(LogManager::INFO, stdsprintf("PROM power voltage for OH%i, SCA-ADC channel 0x0e = %i ",i,result[i])); 
+    }
+
+  result = scaADCCommand(&la, static_cast<SCAADCChannelT>(0x18), 0, 0, ohMask);
+  for(unsigned int i=0; i<result.size(); i++)
+    { 
+      if (result[i] != 0)
+      LOGGER->log_message(LogManager::INFO, stdsprintf("power for GBTX and SCA for OH%i, SCA-ADC channel 0x18 = %i ",i,result[i])); 
+    }
+
+  result = scaADCCommand(&la, static_cast<SCAADCChannelT>(0x0f), 0, 0, ohMask);
+  for(unsigned int i=0; i<result.size(); i++)
+    { 
+      if (result[i] != 0)
+      LOGGER->log_message(LogManager::INFO, stdsprintf("FPGA I/O power for OH%i, SCA-ADC channel 0x0f = %i ",i,result[i])); 
+    }
+
+  result = scaADCCommand(&la, static_cast<SCAADCChannelT>(0x15), 0, 0, ohMask);
+  for(unsigned int i=0; i<result.size(); i++)
+    { 
+      if (result[i] != 0)
+      LOGGER->log_message(LogManager::INFO, stdsprintf("Signal strength of VTRX1 OH%i, SCA-ADC channel 0x15 = %i ",i,result[i])); 
+    }
+
+  //LOGGER->log_message(LogManager::INFO, stdsprintf("Temperature ADC Channel to read: 0x04"));
+  result = scaADCCommand(&la, static_cast<SCAADCChannelT>(0x13), 0, 0, ohMask);
+  for(unsigned int i=0; i<result.size(); i++)
+    { 
+      if (result[i] != 0)
+      LOGGER->log_message(LogManager::INFO, stdsprintf("Signal strength of VTRX2 OH%i, SCA-ADC channel 0x13 = %i ",i,result[i])); 
+    }
+
+  result = scaADCCommand(&la, static_cast<SCAADCChannelT>(0x12), 0, 0, ohMask);
+  for(unsigned int i=0; i<result.size(); i++)
+    { 
+      if (result[i] != 0)
+      LOGGER->log_message(LogManager::INFO, stdsprintf("Signal strength of VTRX3 OH%i, SCA-ADC channel 0x12 = %i ",i,result[i])); 
+    }
+
+  rtxn.abort();
+}
+

@@ -9,6 +9,7 @@
 #include "amc/ttc.h"
 #include "amc/daq.h"
 #include "amc/blaster_ram.h"
+#include "amc/sca.h"
 
 #include <chrono>
 #include <string>
@@ -259,6 +260,11 @@ extern "C" {
 
         // SCA module methods (from amc/sca)
         // modmgr->register_method("amc", "scaHardResetEnable", scaHardResetEnable);
+        modmgr->register_method("amc", "readADCCommands", readADCCommands);
+        modmgr->register_method("amc", "readADCTemperatureChannel", readADCTemperatureChannel);
+        modmgr->register_method("amc", "readADCVoltageChannel", readADCVoltageChannel);
+        modmgr->register_method("amc", "readADCSignalStrengthChannel", readADCSignalStrengthChannel);
+        modmgr->register_method("amc", "readAllADCChannel", readAllADCChannel);
 
         // BLASTER RAM module methods (from amc/blaster_ram)
         modmgr->register_method("amc", "writeConfRAM", writeConfRAM);

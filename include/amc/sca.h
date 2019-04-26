@@ -174,4 +174,60 @@ void readSCAChipID(const RPCMsg *request, RPCMsg *response);
 void readSCASEUCounter(const RPCMsg *request, RPCMsg *response);
 void resetSCASEUCounter(const RPCMsg *request, RPCMsg *response);
 
+/*!
+ *  \fn void readADCCommands(const RPCMsg *request, RPCMsg *response)
+ *  \brief Read the ADC channels
+ *
+ *  - ch : Name of ADC channel to read from SCAADCChannelT
+ *  - ohMask : This specifies which OH's to read from 
+ *
+ *  \param request RPC request message
+ *  \param response RPC response message
+ */
+void readADCCommands(const RPCMsg *request, RPCMsg *response);
+
+/*!
+ *  \fn void readADCTemperatureChannel(const RPCMsg *request, RPCMsg *response)
+ *  \brief Read all of temperature sensor channels. They are 00, 04, 07, 08 and 1F.
+ *
+ *  - ohMask : This specifies which OH's to read from 
+ *
+ *  \param request RPC request message
+ *  \param response RPC response message
+ */
+void readADCTemperatureChannel(const RPCMsg *request, RPCMsg *response);
+
+/*!
+ *  \fn void readADCVoltageChannel(const RPCMsg *request, RPCMsg *response)
+ *  \brief Read all the voltages channels. They are 1B, 1E, 11, 0E, 18 and 0F. 
+ *
+ *  - ohMask : This specifies which OH's to read from 
+ *
+ *  \param request RPC request message
+ *  \param response RPC response message
+ */
+void readADCVoltageChannel(const RPCMsg *request, RPCMsg *response);
+
+/*!
+ *  \fn void readADCSignalStrengthChannel(const RPCMsg *request, RPCMsg *response)
+ *  \brief Read the signal strength channels. They are 15, 13 and 12. 
+ *
+ *  - ohMask : This specifies which OH's to read from 
+ *
+ *  \param request RPC request message
+ *  \param response RPC response message
+ */
+void readADCSignalStrengthChannel(const RPCMsg *request, RPCMsg *response);
+
+/*!
+ *  \fn void readAllADCChannel(const RPCMsg *request, RPCMsg *response)
+ *  \brief Read all connected ADC channels. 
+ *
+ *  - ohMask : This specifies which OH's to read from 
+ *
+ *  \param request RPC request message
+ *  \param response RPC response message
+ */
+void readAllADCChannel(const RPCMsg *request, RPCMsg *response);
+
 #endif
