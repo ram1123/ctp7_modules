@@ -270,7 +270,7 @@ class SCASettings {
             case (VTTX_GEM_PT100):	return true;
             case (GBT0_PT100):		return true;
             case (V6_FPGA_PT100):	return true;
-            default:				return false;
+            default:			return false;
         }
     }
   };  // struct ADCChannel
